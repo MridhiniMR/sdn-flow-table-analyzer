@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-This project implements a Software Defined Networking (SDN) based flow table analyzer using Mininet and a Ryu controller. The goal is to analyze flow entries in multiple switches, identify rule usage, and enforce traffic control policies dynamically.
+This project implements a Software Defined Networking (SDN) based flow table analyzer using Mininet and a Ryu controller. The goal is to analyze flow entries across multiple switches, identify rule usage, and enforce traffic control policies dynamically.
 
 ---
 
@@ -27,12 +27,12 @@ This project implements a Software Defined Networking (SDN) based flow table ana
 
 ## System Architecture
 
-The system consists of a Ryu controller connected to multiple Open vSwitch instances in a Mininet topology.
+The system consists of a centralized Ryu controller connected to multiple Open vSwitch instances in a Mininet topology.
 
 * Switches forward unknown packets to the controller using **Packet-In** messages
 * The controller processes packets and installs flow rules
-* Flow statistics are periodically collected from switches
-* The controller enforces traffic policies centrally
+* Flow statistics are periodically collected
+* Policies such as blocking are enforced centrally
 
 ---
 
@@ -44,14 +44,30 @@ The system consists of a Ryu controller connected to multiple Open vSwitch insta
 
 ---
 
+## Design Justification
+
+A multi-switch topology is used to demonstrate scalability of SDN control across multiple devices. Using two switches allows observation of flow rule behavior across different datapaths. The Ryu controller enables centralized decision-making and dynamic rule enforcement.
+
+---
+
 ## Working Principle
 
-* When a packet arrives at a switch, it is sent to the controller if no matching rule exists
-* The controller learns MAC-to-port mappings and installs flow rules
-* Flow statistics (packet count, byte count) are retrieved periodically
-* Rules with increasing packet counts are classified as **active**
-* Rules with zero packet counts are classified as **unused**
+* When a packet arrives, the switch sends it to the controller if no rule exists
+* The controller learns MAC-to-port mappings
+* Flow rules are installed dynamically based on traffic
+* Packet counts are monitored to analyze rule usage
+* Rules with increasing packet counts are **active**
+* Rules with zero packet counts are **unused**
 * Traffic from host **h3 is blocked** using controller logic
+
+---
+
+## Flow Rule Design
+
+* Match fields include input port and destination MAC
+* Actions specify output ports for forwarding
+* Priority ensures forwarding rules override default rules
+* Blocking is implemented using IP-based filtering in the controller
 
 ---
 
@@ -59,7 +75,7 @@ The system consists of a Ryu controller connected to multiple Open vSwitch insta
 
 ### 1. Start Controller
 
-```
+```id="axu3o2"
 source ~/ryu-env/bin/activate
 cd ~/sdn-project
 ryu-manager controller.py
@@ -67,13 +83,13 @@ ryu-manager controller.py
 
 ### 2. Start Mininet
 
-```
+```id="r3t2eq"
 sudo mn --custom topology.py --topo mytopo --controller remote --switch ovsk
 ```
 
 ### 3. Set OpenFlow Version
 
-```
+```id="6qjv3y"
 sh ovs-vsctl set bridge s1 protocols=OpenFlow13
 sh ovs-vsctl set bridge s2 protocols=OpenFlow13
 ```
@@ -84,7 +100,7 @@ sh ovs-vsctl set bridge s2 protocols=OpenFlow13
 
 ### Allowed Traffic
 
-```
+```id="h8c0xp"
 h1 ping -c 3 h2
 ```
 
@@ -97,7 +113,7 @@ Expected Output:
 
 ### Blocked Traffic
 
-```
+```id="a5zy2g"
 h3 ping -c 3 h1
 ```
 
@@ -110,9 +126,7 @@ Expected Output:
 
 ## Flow Table Analysis
 
-Flow entries are analyzed using:
-
-```
+```id="9wphz7"
 sudo ovs-ofctl -O OpenFlow13 dump-flows s1
 ```
 
@@ -121,9 +135,20 @@ sudo ovs-ofctl -O OpenFlow13 dump-flows s1
 
 ---
 
+## Performance Analysis
+
+* Latency is measured using ping
+* Throughput is measured using iperf
+* Allowed traffic shows normal latency and throughput
+* Blocked traffic results in 100% packet loss
+* Flow statistics confirm dynamic rule installation
+* Packet counts differentiate active and unused rules
+
+---
+
 ## Proof of Execution
 
-### Ping Results (Allowed Traffic)
+### Allowed Traffic (Ping)
 
 Shows successful communication between h1 and h2 (0% packet loss).
 ![Allowed](screenshots/1.png)
@@ -139,29 +164,48 @@ Shows failed communication from h3 to h1 (100% packet loss).
 
 ### Controller Logs
 
-Displays detection of blocked traffic by the controller.
+Displays blocked traffic detection by the controller.
 ![Controller](screenshots/3.png)
 
 ---
 
 ### Flow Table Output
 
-Shows installed flow rules with packet counts indicating usage.
+Shows installed flow rules and packet counts.
 ![Flow](screenshots/4.png)
 
 ---
 
-## Performance Analysis
+### Throughput (iperf)
 
-- Ping results show low latency between allowed hosts
-- Blocked traffic results in 100% packet loss
-- iperf results demonstrate throughput between hosts
-- Flow table updates confirm dynamic rule installation
+Shows bandwidth between hosts.
+![iperf](screenshots/5.png)
 
 ---
+
+## Validation
+
+* Verified forwarding using h1 to h2 communication
+* Verified blocking using h3 to h1 communication
+* Verified flow entries using ovs-ofctl
+* Verified controller logs for blocked traffic
+* Verified throughput using iperf
+
+---
+
 ## Conclusion
 
-This project demonstrates how SDN enables centralized control of network behavior. The controller dynamically installs flow rules, monitors their usage, and enforces traffic policies. The system successfully differentiates between active and unused rules and blocks unauthorized traffic.
+This project demonstrates how SDN enables centralized control of network behavior. The controller dynamically installs flow rules, monitors their usage, and enforces traffic policies. The system successfully identifies active and unused rules and blocks unauthorized traffic.
 
 ---
+
+## Key Observations
+
+* Flow rules are installed dynamically based on traffic
+* Packet counts indicate rule activity
+* Blocking is enforced centrally by the controller
+* Multi-switch topology demonstrates scalability
+
+---
+
 
