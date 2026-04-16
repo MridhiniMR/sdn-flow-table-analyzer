@@ -151,6 +151,14 @@ Shows installed flow rules with packet counts indicating usage.
 
 ---
 
+## Performance Analysis
+
+- Ping results show low latency between allowed hosts
+- Blocked traffic results in 100% packet loss
+- iperf results demonstrate throughput between hosts
+- Flow table updates confirm dynamic rule installation
+
+---
 ## Conclusion
 
 This project demonstrates how SDN enables centralized control of network behavior. The controller dynamically installs flow rules, monitors their usage, and enforces traffic policies. The system successfully differentiates between active and unused rules and blocks unauthorized traffic.
